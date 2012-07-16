@@ -17,6 +17,9 @@
 package javassist.bytecode.stackmap;
 
 import javassist.bytecode.ByteArray;
+import javassist.bytecode.CodeAttribute;
+import javassist.bytecode.InstructionPrinter;
+import javassist.bytecode.Mnemonic;
 import javassist.bytecode.Opcode;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.Descriptor;
@@ -36,6 +39,7 @@ public abstract class Tracer implements TypeTag {
     protected int stackTop;
     protected TypeData[] stackTypes;
     protected TypeData[] localsTypes;
+    protected CodeAttribute ca;
 
     public Tracer(ClassPool classes, ConstPool cp, int maxStack, int maxLocals,
                   String retType) {
@@ -62,6 +66,14 @@ public abstract class Tracer implements TypeTag {
         localsTypes = new TypeData[size2];
         copyFrom(size2, t.localsTypes, localsTypes);
     }
+    
+	protected CodeAttribute getCodeAttribute() {
+		return ca;
+	}
+
+	protected void setCodeAttribute(CodeAttribute ca) {
+		this.ca = ca;
+	}    
 
     protected static int copyFrom(int n, TypeData[] srcTypes, TypeData[] destTypes) {
         int k = -1;
@@ -89,8 +101,8 @@ public abstract class Tracer implements TypeTag {
      * @return      the size of the instruction at POS.
      */
     protected int doOpcode(int pos, byte[] code) throws BadBytecode {
+        int op = code[pos] & 0xff;
         try {
-            int op = code[pos] & 0xff;
             if (op < 96)
                 if (op < 54)
                     return doOpcode0_53(pos, code, op);
@@ -104,6 +116,12 @@ public abstract class Tracer implements TypeTag {
         }
         catch (ArrayIndexOutOfBoundsException e) {
             throw new BadBytecode("inconsistent stack height " + e.getMessage());
+        }
+        catch (BadBytecode e) {        	
+        	if(ca != null)
+        		throw new BadBytecode("Wrong bytecode at position: " + pos + " : " + InstructionPrinter.instructionString(ca.iterator(), pos, cpool),e);
+        	else
+        		throw new BadBytecode("Wrong bytecode at position: " + pos + " insn: " + Mnemonic.OPCODE[op],e);        		
         }
     }
 

@@ -88,12 +88,14 @@ public class MapMaker extends Tracer {
         CodeAttribute ca = minfo.getCodeAttribute();
         if (ca == null)
             return null;
+        
 
         TypedBlock[] blocks = TypedBlock.makeBlocks(minfo, ca, true);
         if (blocks == null)
             return null;
 
         MapMaker mm = new MapMaker(classes, minfo, ca);
+        mm.setCodeAttribute(ca);
         mm.make(blocks, ca.getCode());
         return mm.toStackMap(blocks);
     }
@@ -115,6 +117,7 @@ public class MapMaker extends Tracer {
             return null;
 
         MapMaker mm = new MapMaker(classes, minfo, ca);
+        mm.setCodeAttribute(ca);
         mm.make(blocks, ca.getCode());
         return mm.toStackMap2(minfo.getConstPool(), blocks);
     }
@@ -190,6 +193,7 @@ public class MapMaker extends Tracer {
                 else {
                     recordStackMap(e);
                     MapMaker maker = new MapMaker(this, true);
+                    maker.setCodeAttribute(ca);
                     maker.make(code, e);
                 }
             }
@@ -205,6 +209,7 @@ public class MapMaker extends Tracer {
         else {
             recordStackMap(tb, handler.typeIndex);
             MapMaker maker = new MapMaker(this, false);
+            maker.setCodeAttribute(ca);
 
             /* the following code is equivalent to maker.copyFrom(this)
              * except stackTypes are not copied.
