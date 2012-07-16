@@ -20,6 +20,7 @@ import javassist.bytecode.*;
 import javassist.compiler.Javac;
 import javassist.compiler.CompileError;
 import javassist.expr.ExprEditor;
+import javassist.expr.InsnSequenceEditor;
 
 /**
  * <code>CtBehavior</code> represents a method, a constructor,
@@ -703,6 +704,30 @@ public abstract class CtBehavior extends CtMember {
         if (editor.doit(declaringClass, methodInfo))
             declaringClass.checkModify();
     }
+
+    /**
+     * Modifies the method/constructor body.
+     *
+     * <p>While executing this method, only <code>replace()</code>
+     * in <code>Expr</code> is available for bytecode modification.
+     * Other methods such as <code>insertBefore()</code> may collapse
+     * the bytecode because the <code>InsnSequenceEditor</code> loses
+     * its current position.  
+     *
+     * @param editor            specifies how to modify.
+     * @see javassist.expr.Expr#replace(String)
+     * @see #insertBefore(String)
+     */
+	public void instrument(InsnSequenceEditor editor) 
+		throws CannotCompileException {
+		// if the class is not frozen,
+		// does not turn the modified flag on.
+		if (declaringClass.isFrozen())
+			declaringClass.checkModify();
+
+		if (editor.doit(declaringClass, methodInfo))
+			declaringClass.checkModify();
+	}
 
     /**
      * Inserts bytecode at the beginning of the body.
