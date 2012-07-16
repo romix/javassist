@@ -158,17 +158,27 @@ public class FieldAccess extends Expr {
         try {
             CtClass[] params;
             CtClass retType;
-            CtClass fieldType
+            CtClass oldFieldType
                 = Descriptor.toCtClass(constPool.getFieldrefType(index),
                                        thisClass.getClassPool());
+			if (oldFieldType.isArray()) {
+				String fieldName = constPool.getFieldrefName(index);
+				CtClass fieldType = thisClass.getField(fieldName).getType();
+				oldFieldType = fieldType;
+			}
+            
+//            if(!fieldType.equals(oldFieldType)) {
+//            	System.out.println("Strange");
+//            }
+            
             boolean read = isReader();
             if (read) {
                 params = new CtClass[0];
-                retType = fieldType;
+                retType = oldFieldType;
             }
             else {
                 params = new CtClass[1];
-                params[0] = fieldType;
+                params[0] = oldFieldType;
                 retType = CtClass.voidType;
             }
 
@@ -188,14 +198,17 @@ public class FieldAccess extends Expr {
                                                     index, paramVar));
             else {
                 // because $type is not the return type...
-                jc.recordType(fieldType);
+                jc.recordType(oldFieldType);
                 jc.recordProceed(new ProceedForWrite(params[0], opcode,
                                                      index, paramVar));
             }
 
             Bytecode bytecode = jc.getBytecode();
-            storeStack(params, isStatic(), paramVar, bytecode);
-            jc.recordLocalVariables(ca, pos);
+            boolean emptyStmt = statement.isEmpty() || statement.equals("{}") || statement.equals(";");
+            if(read || !emptyStmt) { 
+            	storeStack(params, isStatic(), paramVar, bytecode);
+            	jc.recordLocalVariables(ca, pos);
+            }
 
             if (included)
                 if (retType == CtClass.voidType) {
