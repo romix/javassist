@@ -17,6 +17,7 @@ package javassist.bytecode.analysis;
 
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtField;
 import javassist.NotFoundException;
 import javassist.bytecode.BadBytecode;
 import javassist.bytecode.CodeIterator;
@@ -63,8 +64,9 @@ public class Executor implements Opcode {
      * @param frame the frame to modify to represent the result of the instruction
      * @param subroutine the optional subroutine this instruction belongs to.
      * @throws BadBytecode if the bytecode violates the jvm spec
+     * @throws NotFoundException 
      */
-    public void execute(MethodInfo method, int pos, CodeIterator iter, Frame frame, Subroutine subroutine) throws BadBytecode {
+    public void execute(MethodInfo method, int pos, CodeIterator iter, Frame frame, Subroutine subroutine) throws BadBytecode, NotFoundException {
         this.lastPos = pos;
         int opcode = iter.byteAt(pos);
 
@@ -701,9 +703,17 @@ public class Executor implements Opcode {
         simplePush(value1, frame);
     }
 
-    private void evalGetField(int opcode, int index, Frame frame) throws BadBytecode {
+    private void evalGetField(int opcode, int index, Frame frame) throws BadBytecode, NotFoundException {
         String desc = constPool.getFieldrefType(index);
+        
+        String fieldName = constPool.getFieldrefName(index);
+        String className = constPool.getFieldrefClassName(index);
+        CtClass cc = classPool.get(className);
+        CtField field = cc.getField(fieldName);
+        
         Type type = zeroExtend(typeFromDesc(desc));
+        if(type.isArray())
+        	type.setValue(field);
 
         if (opcode == GETFIELD) {
             Type objectType = resolveClassInfo(constPool.getFieldrefClassName(index));
@@ -845,10 +855,15 @@ public class Executor implements Opcode {
         simplePush(getType(name), frame);
     }
 
-    private void evalPutField(int opcode, int index, Frame frame) throws BadBytecode {
+    private void evalPutField(int opcode, int index, Frame frame) throws BadBytecode, NotFoundException {
         String desc = constPool.getFieldrefType(index);
         Type type = zeroExtend(typeFromDesc(desc));
 
+        String fieldName = constPool.getFieldrefName(index);
+        String className = constPool.getFieldrefClassName(index);
+        CtClass cc = classPool.get(className);
+        CtField field = cc.getField(fieldName);
+        
         verifyAssignable(type, simplePop(frame));
 
         if (opcode == PUTFIELD) {
