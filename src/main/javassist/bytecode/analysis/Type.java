@@ -23,6 +23,7 @@ import java.util.Map;
 
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtField;
 import javassist.NotFoundException;
 
 /**
@@ -43,6 +44,10 @@ import javassist.NotFoundException;
 public class Type {
     private final CtClass clazz;
     private final boolean special;
+    // Optional attached value
+    // It is only set by GETFIELD instructions
+    // Used to track the info about arrays that are accessed later in the code
+    private Object value;
 
     private static final Map prims = new IdentityHashMap();
     /** Represents the double primitive type */
@@ -578,6 +583,14 @@ public class Type {
         return one == two || (one != null && two != null && one.getName().equals(two.getName()));
     }
 
+    public void setValue(Object val) {
+    	value = val;
+    }
+    
+    public Object getValue() {
+    	return value;
+    }
+    
     public String toString() {
         if (this == BOGUS)
             return "BOGUS";
@@ -588,6 +601,9 @@ public class Type {
         if (this == TOP)
             return "TOP";
 
-        return clazz == null ? "null" : clazz.getName();
+        String result = clazz == null ? "null" : clazz.getName();
+        if(value != null)
+        	result+=" (value: " + ((CtField)value).getDeclaringClass().getName() + "." + ((CtField)value).getName()+")";
+        return result;
     }
 }
