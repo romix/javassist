@@ -178,7 +178,9 @@ public class Analyzer implements Opcode {
             executor.execute(method, pos, iter, frame, subroutine);
         } catch (RuntimeException e) {
             throw new BadBytecode(e.getMessage() + "[pos = " + pos + "]", e);
-        }
+        } catch (NotFoundException e) {
+            throw new BadBytecode(e.getMessage() + "[pos = " + pos + "]", e);
+		}
 
         int opcode = iter.byteAt(pos);
 
