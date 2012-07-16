@@ -17,6 +17,7 @@ package javassist.bytecode;
 
 import java.io.PrintStream;
 
+import javassist.CtBehavior;
 import javassist.CtMethod;
 
 /**
@@ -39,14 +40,14 @@ public class InstructionPrinter implements Opcode {
     /**
      * Prints the bytecode instructions of a given method.
      */
-    public static void print(CtMethod method, PrintStream stream) {
+    public static void print(CtBehavior method, PrintStream stream) {
         (new InstructionPrinter(stream)).print(method);
     }
 
     /**
      * Prints the bytecode instructions of a given method.
      */
-    public void print(CtMethod method) {
+    public void print(CtBehavior method) {
         MethodInfo info = method.getMethodInfo2();
         ConstPool pool = info.getConstPool();
         CodeAttribute code = info.getCodeAttribute();
