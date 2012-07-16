@@ -17,6 +17,7 @@ package javassist.bytecode.analysis;
 
 import java.io.PrintStream;
 
+import javassist.CtBehavior;
 import javassist.CtClass;
 import javassist.CtMethod;
 import javassist.Modifier;
@@ -72,11 +73,22 @@ public final class FramePrinter {
         }
     }
 
+    private String getBehaviorString(CtBehavior method) {
+        try {
+        	if(method instanceof CtMethod) 
+        		return getMethodString((CtMethod) method);
+            return Modifier.toString(method.getModifiers()) + " "
+                    + method.getName()
+                    + Descriptor.toString(method.getSignature()) + ";";
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
     /**
      * Prints the instructions and the frame states of the given method.
      */
-    public void print(CtMethod method) {
-        stream.println("\n" + getMethodString(method));
+    public void print(CtBehavior method) {
+        stream.println("\n" + getBehaviorString(method));
         MethodInfo info = method.getMethodInfo2();
         ConstPool pool = info.getConstPool();
         CodeAttribute code = info.getCodeAttribute();
@@ -117,6 +129,35 @@ public final class FramePrinter {
 
     }
 
+    public void print(CtBehavior method, Frame frame, int pos) {
+        MethodInfo info = method.getMethodInfo2();
+        ConstPool pool = info.getConstPool();
+        CodeAttribute code = info.getCodeAttribute();
+        
+        if (code == null)
+            return;
+
+        int spacing = String.valueOf(code.getCodeLength()).length();
+
+        CodeIterator iterator = code.iterator();
+
+		stream.println(pos + ": "
+				+ InstructionPrinter.instructionString(iterator, pos, pool));
+
+		addSpacing(spacing + 3);
+
+		if (frame == null) {
+			stream.println("--DEAD CODE--");
+			return;
+		}
+
+		printStack(frame);
+
+		addSpacing(spacing + 3);
+		printLocals(frame);
+
+    }
+    
     private void printStack(Frame frame) {
         stream.print("stack [");
         int top = frame.getTopIndex();
