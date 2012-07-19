@@ -1214,4 +1214,58 @@ public abstract class CtBehavior extends CtMember {
             throw new CannotCompileException(e);
         }
     }
+
+    /**
+     * Inserts bytecode at the given bytecode position in the code.
+     *
+     * @param pos		the position in the bytecode
+     * @param src       the source code representing the inserted bytecode.
+     *                  It must be a single statement or block.
+     * @param rebuild   if set, stack map will be rebuilt
+     * @see CtConstructor#insertBeforeBody(String)
+     */
+
+    public void insertAtPos(int pos, String src, boolean rebuild)
+        throws CannotCompileException
+    {
+        CtClass cc = declaringClass;
+        cc.checkModify();
+        CodeAttribute ca = methodInfo.getCodeAttribute();
+        if (ca == null)
+            throw new CannotCompileException("no method body");
+
+        CodeIterator iterator = ca.iterator();
+        Javac jv = new Javac(cc);
+        try {
+            int nvars = jv.recordParams(getParameterTypes(),
+                                        Modifier.isStatic(getModifiers()));
+            jv.recordParamNames(ca, nvars);
+            jv.recordLocalVariables(ca, 0);
+            jv.recordType(getReturnType0());
+            jv.compileStmnt(src);
+            Bytecode b = jv.getBytecode();
+            int stack = b.getMaxStack();
+            int locals = b.getMaxLocals();
+
+            if (stack > ca.getMaxStack())
+                ca.setMaxStack(stack);
+
+            if (locals > ca.getMaxLocals())
+                ca.setMaxLocals(locals);
+
+            pos = iterator.insertAt(pos, b.get());
+            iterator.insert(b.getExceptionTable(), pos);
+            if (rebuild)
+                methodInfo.rebuildStackMapIf6(cc.getClassPool(), cc.getClassFile2());
+        }
+        catch (NotFoundException e) {
+            throw new CannotCompileException(e);
+        }
+        catch (CompileError e) {
+            throw new CannotCompileException(e);
+        }
+        catch (BadBytecode e) {
+            throw new CannotCompileException(e);
+        }
+    }
 }
